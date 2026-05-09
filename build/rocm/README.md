@@ -283,10 +283,14 @@ Notes:
 2. If your site uses environment modules, load ROCm and compiler modules before running the build.
 3. Use `--clang_path=$(command -v amdclang)` to ensure JAX picks the ROCm clang toolchain.
 
-### Step 3: Then install custom JAX using:
+### Step 3: Install custom JAX in your active Python environment
+
+Use `pip` instead of `setup.py develop`. If you are in a virtual environment,
+do not use `--user`.
 
 ```Bash
-> python3 setup.py develop --user && pip3 -m pip install dist/*.whl
+> python3 -m pip install dist/*.whl
+> python3 -m pip install -e . --no-deps
 ```
 
 ### Simplified Build Script

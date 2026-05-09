@@ -31,6 +31,12 @@ load("@xla//third_party/py:python_wheel.bzl", "collect_data_files", "transitive_
 load("@xla//xla/tsl:tsl.bzl", "transitive_hdrs", _if_windows = "if_windows", _pybind_extension = "tsl_pybind_extension_opensource")
 load("@xla//xla/tsl/platform:build_config_root.bzl", _tf_cuda_tests_tags = "tf_cuda_tests_tags", _tf_exec_properties = "tf_exec_properties")
 
+# oneAPI symbols are optional in this ROCm-focused environment.
+_oneapi_library = native.cc_library
+
+def _if_oneapi_is_configured(if_true, if_false = []):
+    return if_false
+
 # Explicitly re-exports names to avoid "unused variable" warnings from .bzl
 # lint tools.
 cc_proto_library = _cc_proto_library

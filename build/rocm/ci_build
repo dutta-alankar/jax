@@ -23,11 +23,25 @@
 import argparse
 import logging
 import os
+import shutil
 import subprocess
 import sys
 
 
 LOG = logging.getLogger("ci_build")
+
+
+def _require_docker(action):
+    if shutil.which("docker"):
+        return
+
+    raise RuntimeError(
+        "docker is required for '%s' but was not found in PATH. "
+        "On cluster nodes without docker, build jaxlib directly with "
+        "build/build.py (example: python build/build.py build --wheels=jaxlib "
+        "--rocm_path=/opt/rocm --rocm_version=70 --clang_path=$(command -v amdclang))."
+        % action
+    )
 
 
 def image_by_name(name):
@@ -38,6 +52,7 @@ def image_by_name(name):
 
 
 def create_manylinux_build_image(rocm_version, rocm_build_job, rocm_build_num):
+    _require_docker("dist_wheels")
     image_name = "jax-build-manylinux_2_28_x86_64_rocm%s" % rocm_version.replace(
         ".", ""
     )
@@ -175,6 +190,7 @@ def dist_docker(
     dockerfile=None,
     keep_image=True,
 ):
+    _require_docker("dist_docker")
     if not dockerfile:
         dockerfile = "build/rocm/Dockerfile.ms"
 
@@ -211,6 +227,8 @@ def dist_docker(
 
 def test(image_name, test_cmd):
     """Run unit tests like CI would inside a JAX image."""
+
+    _require_docker("test")
 
     gpu_args = [
         "--device=/dev/kfd",
@@ -330,6 +348,7 @@ def main():
             args.xla_source_dir,
             args.rocm_build_job,
             args.rocm_build_num,
+            args.compiler,
         )
 
     elif args.action == "test":
