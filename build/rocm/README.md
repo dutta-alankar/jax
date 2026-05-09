@@ -1,5 +1,5 @@
 # JAX on ROCm
-This directory provides setup instructions and necessary files to build, test, and run JAX with ROCm support in a Docker environment, suitable for both runtime and CI workflows. Explore the following methods to use or build JAX on ROCm!
+This directory provides setup instructions and necessary files to build, test, and run JAX with ROCm support in Docker and host-native environments (for example, HPC clusters where Docker is unavailable). Explore the following methods to use or build JAX on ROCm.
 
 ## 0. Install via `pip` (JAX extras)
 
@@ -246,11 +246,42 @@ Run the following command to build the `jaxlib` wheel:
 
 ```Bash
 > python3 ./build/build.py build --wheels=jaxlib \
-    --rocm_version=7 --rocm_path=/opt/rocm-[version]
+    --rocm_version=70 --rocm_path=/opt/rocm
 ```
 
 This will generate the `jaxlib` wheel in the `dist/` directory. `jaxlib` is a
 device agnostic library.
+
+### Step 2a (Recommended on HPC): Host-native build without Docker
+
+For clusters or restricted environments, use a host-native build and force
+all build caches into a project-local cache root.
+
+```Bash
+> mkdir -p /viper/ptmp/adutt/.cache/bazel/output_base
+> export XDG_CACHE_HOME=/viper/ptmp/adutt/.cache
+> python3 build/build.py build --wheels=jaxlib \
+    --rocm_path=/opt/rocm \
+    --rocm_version=70 \
+    --clang_path=$(command -v amdclang) \
+    --bazel_startup_options=--output_base=/viper/ptmp/adutt/.cache/bazel/output_base \
+    --bazel_startup_options=--host_jvm_args=-XX:ActiveProcessorCount=8 \
+    --bazel_startup_options=--host_jvm_args=-Xmx6g \
+    --bazel_options=--jobs=8 \
+    --bazel_options=--loading_phase_threads=8 \
+    --verbose
+```
+
+Expected successful output includes a wheel path similar to:
+
+```text
+dist/jaxlib-<version>-cp<pyver>-cp<pyver>-manylinux_2_27_x86_64.whl
+```
+
+Notes:
+1. Keep `XDG_CACHE_HOME` and Bazel `--output_base` on high-quota storage to avoid home-directory quota failures.
+2. If your site uses environment modules, load ROCm and compiler modules before running the build.
+3. Use `--clang_path=$(command -v amdclang)` to ensure JAX picks the ROCm clang toolchain.
 
 ### Step 3: Then install custom JAX using:
 
